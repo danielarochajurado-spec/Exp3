@@ -209,7 +209,7 @@
         async function saveDataToFirebase(participant_id, data_rows) {
             try {
                 const date = new Date().toISOString().replace(/[:.]/g, "-").replace("T", "_").slice(0, 19);
-                const docId = `DDGame_${date}_${participant_id}`;
+                const docId = `DDGame_${date}_${participant_id}_${framing}`;
                 const docRef = doc(db, "results", docId);
 
                 await setDoc(docRef, {
