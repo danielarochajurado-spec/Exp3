@@ -1,0 +1,1141 @@
+<!DOCTYPE html> <html lang="en">
+  <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DDGAME</title>
+  <script src="https://unpkg.com/jspsych@7.2.1"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.1.1"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-survey-text@1.1.1"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <link href="https://unpkg.com/jspsych@7.2.1/css/jspsych.css" rel="stylesheet" type="text/css" />
+  
+  <style>
+    :root {
+      --tile: 56px;
+      --gap: 4px;
+      --panel-w: 260px;
+      --bg: #0f1220;
+      --fg: #e6e6f0;
+      --accent: #7dd3fc;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    #saveExitBtn {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        z-index: 10001; 
+        cursor: pointer;
+        background: white;
+        color: var(--fg);
+        border: 1px solid #283056;
+        border-radius: 10px;
+        padding: 10px 12px;
+
+    }
+      #jspsych-target {
+          position: relative;
+          z-index: 1; 
+        }
+    body {
+      margin: 0; display: grid; place-items: center; background: var(--bg); color: var(--fg);
+      font-family: system-ui, -apple-system, Helvetica, Arial;
+    }
+    .delay-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 9999;
+      display: none;
+    }
+    /* The .app class is now inside the jspsych-content container and can be styled */
+    .jspsych-content-wrapper .app {
+      display: grid;
+      grid-template-columns: auto var(--panel-w);
+      gap: 16px;
+      padding: 16px;
+      width: min(100vw, 1100px);
+    }
+    .board-wrap { position: relative; background: #151936; padding: 16px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+    canvas { display: block; background: #0b0f25; border-radius: 8px; }
+    .hud { background: #151936; border-radius: 16px; padding: 16px; display: grid; gap: 12px; height: 100%; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+    .hud h1 { margin: 0; font-size: 18px; letter-spacing: .5px; color: var(--accent); }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-variant-numeric: tabular-nums; }
+    .bar { height: 10px; background: #0b0f25; border-radius: 999px; overflow: hidden; }
+    .bar > i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, #22d3ee, #8b5cf6); }
+    button { cursor: pointer; background: #0b0f25; color: var(--fg); border: 1px solid #283056; border-radius: 10px; padding: 10px 12px; }
+    button:hover { background: #111638; }
+    .muted { opacity: .8; font-size: 12px; }
+    .center-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%; /* Ocupa toda la altura disponible */
+    }
+
+    .button-container {
+      display: flex;
+      flex-direction: row;
+      gap: 20px; /* Espaciado entre los botones */
+      margin-top: 20px;
+    }
+  </style>
+  </head>
+  <body>
+    <button id="saveExitBtn"> Salvar e sair </button>
+    <div id="jspsych-target"></div>  
+    <script type="module">
+    // ===== FIREBASE IMPORT =====
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc, collection, addDoc} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+
+    // ===== FIREBASE CONFIG =====
+    const firebaseConfig = {
+        apiKey: "AIzaSyBdiRWxsnpS55ZhgVAMR89FP7DTXOQ4WiA",
+        authDomain: "discountinggame.firebaseapp.com",
+        projectId: "discountinggame",
+        storageBucket: "discountinggame.firebasestorage.app",
+        messagingSenderId: "497209908113",
+        appId: "1:497209908113:web:6e36f40f63b8154a44d830"
+
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // ===== FUNCIONES FIREBASE =====
+    let data_rows = []; 
+    
+    function exportDataToExcel(participant_id) {
+      const worksheet = XLSX.utils.json_to_sheet(data_rows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Resultados');
+      // Generate the filename using participant ID and date
+      const date = new Date().toISOString().replace(/[:.]/g, "-").replace("T", "_").slice(0, 19);
+      const filename = `DDGame_results_${participant_id}_${date}.xlsx`;
+
+      // Write and download the Excel file
+      XLSX.writeFile(workbook, filename);
+    }
+    
+    async function saveDataToFirebase(participant_id, data_rows) {
+        try {
+          const date = new Date().toISOString().replace(/[:.]/g, "-").replace("T", "_").slice(0, 19);
+          const docId = `DDGame_${date}_${participant_id}`;
+          const docRef = doc(db, "results", docId);
+
+          await setDoc(docRef, {
+            participant_id,
+            date,
+            data: data_rows
+          });
+          console.log('✅ Data successfully sent to Firestore');
+         } catch (error) {
+          console.error('❌ Error sending data to Firestore:', error);
+        }
+      }
+
+      async function saveAndExit(jsPsych) {     
+        console.log('Saving and exiting...');     
+        // Retrieve the participant ID     
+        let participant_id = jsPsych?.data?.get()?.values()[0]?.participant_id || localStorage.getItem('participant_id') || "unknown";      
+        exportDataToExcel(participant_id);      
+        await saveDataToFirebase(participant_id, data_rows);      
+        // Save data to localStorage as a backup      
+        localStorage.setItem('DDGame', JSON.stringify(data_rows));      
+        // Redirect or show a confirmation message      
+        alert('Your progress has been saved. The game will now end.');      
+        window.location.href = "index.html"; // Redirect to the main page or a thank-you page
+        }    
+        window.saveAndExit = saveAndExit; // Hacer accesible globalmente
+
+      async function markTaskComplete() {
+        const pid = localStorage.getItem('participantId');
+        const taskId = localStorage.getItem('currentTask');
+        const ref = doc(db, "participants", pid);
+        const snap = await getDoc(ref);
+        let data = snap.exists() ? snap.data() : { completed: {} };
+
+        data.completed[taskId] = true;
+        await setDoc(ref, data);
+      }
+      window.markTaskComplete = markTaskComplete;
+      document.addEventListener('gameComplete', markTaskComplete);
+      
+    function match3App(canvasId = 'board', prevState = null) {
+      
+      const tile = 56;
+      let score = prevState?.score ?? 0;
+      let level = prevState?.level ?? 1;
+      let achievements = prevState?.achievements ?? 0;
+      let rows = prevState?.rows ?? 5;
+      let cols = prevState?.cols ?? 5;
+      let gemTypes = prevState?.gemTypes ?? 3;
+      let addColumnNext = true; // asegúrate de definirlo    
+     
+      let grid = [];
+      let falling = [];
+
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) { console.error(`Elemento #${canvasId} no encontrado`); return null; }
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { console.error('No se pudo obtener el contexto 2D'); return null; }
+
+      // HUD (opcionales)
+      const scoreEl = document.getElementById('score');
+      const achEl   = document.getElementById('achievements');
+      const lvlEl   = document.getElementById('level');
+      const sizeEl  = document.getElementById('size');
+      const typesEl = document.getElementById('types');
+      const lvlBar  = document.getElementById('lvlbar');
+      const lvlInfo = document.getElementById('level-info');
+      const shuffleBtn = document.getElementById('shuffle');
+
+      const palette = ['#60a5fa','#f472b6','#34d399','#fbbf24','#8f00ff','#ef4444','#c084fc'];
+      const colorFor = id => palette[id % palette.length];
+      const randInt  = max => Math.floor(Math.random() * max);
+      const inBounds = (r,c) => r>=0 && r<rows && c>=0 && c<cols;
+      const newRandomGem = () => randInt(Math.max(3, gemTypes));
+      
+
+      function resizeCanvas(){ canvas.width = cols * tile; canvas.height = rows * tile; }
+
+      function generateGrid(){
+        grid = Array.from({length: rows}, ()=>Array.from({length: cols}, ()=>-1));
+        for (let r=0;r<rows;r++){
+          for (let c=0;c<cols;c++){
+            let g;
+            do { g = newRandomGem(); }
+            while (
+              (c>=2 && grid[r][c-1]===g && grid[r][c-2]===g) ||
+              (r>=2 && grid[r-1][c]===g && grid[r-2][c]===g)
+            );
+            grid[r][c] = g;
+          }
+        }
+      }
+
+      if (!CanvasRenderingContext2D.prototype.roundRect) {
+        CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
+          if (w<2*r) r=w/2; if (h<2*r) r=h/2;
+          this.beginPath();
+          this.moveTo(x+r,y);
+          this.arcTo(x+w,y,x+w,y+h,r);
+          this.arcTo(x+w,y+h,x,y+h,r);
+          this.arcTo(x,y+h,x,y,r);
+          this.arcTo(x,y,x+w,y,r);
+          this.closePath();
+          return this;
+        };
+      }
+
+      function drawCell(r,c){
+        const x=c*tile, y=r*tile, v=grid[r][c];
+        ctx.fillStyle='#0b0f25';
+        ctx.fillRect(x,y,tile,tile);
+        if(v>=0){
+          ctx.fillStyle=colorFor(v);
+          const pad=6;
+          ctx.beginPath();
+          ctx.roundRect(x+pad,y+pad,tile-pad*2,tile-pad*2,10);
+          ctx.fill();
+          ctx.globalAlpha=.1; ctx.fillStyle='#fff';
+          ctx.beginPath(); ctx.arc(x+tile*0.35,y+tile*0.35,tile*0.22,0,Math.PI*2); ctx.fill();
+          ctx.globalAlpha=1;
+        }
+      }
+
+      function drawBoard(){
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) if(grid[r][c]>=0) drawCell(r,c);
+        for(const f of falling){
+          const y=f.fromY+(f.toY-f.fromY)*easeOut(f.progress);
+          ctx.fillStyle=colorFor(f.gem);
+          const pad=6;
+          ctx.beginPath();
+          ctx.roundRect(f.x+pad,y+pad,tile-pad*2,tile-pad*2,10);
+          ctx.fill();
+        }
+      }
+
+      const easeOut = t => 1 - Math.pow(1-t,3);
+      function animate(){
+        const still = [];
+        for(const f of falling){
+          f.progress += 0.08;
+          if (f.progress < 1) still.push(f);
+        }
+        falling = still;
+        drawBoard();
+        if (falling.length > 0) requestAnimationFrame(animate);
+      }
+
+      function findMatches(){
+        const toClear = new Set();
+        for(let r=0;r<rows;r++){
+          let runVal=grid[r][0], runStart=0;
+          for(let c=1;c<=cols;c++){
+            const v = c<cols ? grid[r][c] : NaN;
+            if (v !== runVal){
+              const len = c - runStart;
+              if (runVal>=0 && len>=3) for(let k=runStart;k<c;k++) toClear.add(`${r},${k}`);
+              runVal=v; runStart=c;
+            }
+          }
+        }
+        for(let c=0;c<cols;c++){
+          let runVal=grid[0][c], runStart=0;
+          for(let r=1;r<=rows;r++){
+            const v = r<rows ? grid[r][c] : NaN;
+            if (v !== runVal){
+              const len = r - runStart;
+              if (runVal>=0 && len>=3) for(let k=runStart;k<r;k++) toClear.add(`${k},${c}`);
+              runVal=v; runStart=r;
+            }
+          }
+        }
+        return toClear;
+      }
+
+      function collapseAndRefill(){
+        for(let c=0;c<cols;c++){
+          let write=rows-1;
+          for(let r=rows-1;r>=0;r--){
+            if(grid[r][c]>=0){
+              if(write!==r){
+                const gem=grid[r][c];
+                falling.push({gem,x:c*tile,fromY:r*tile,toY:write*tile,progress:0});
+                grid[write][c]=gem; grid[r][c]=-1;
+              }
+              write--;
+            }
+          }
+          for(let r=write;r>=0;r--){
+            const gem=newRandomGem();
+            grid[r][c]=gem;
+            falling.push({gem,x:c*tile,fromY:-tile,toY:r*tile,progress:0});
+          }
+        }
+      }
+
+      function swapIfValid(r1,c1,r2,c2){
+        if(!inBounds(r1,c1)||!inBounds(r2,c2)) return false;
+        const dr=Math.abs(r1-r2), dc=Math.abs(c1-c2);
+        if(dr+dc!==1) return false;
+        [grid[r1][c1],grid[r2][c2]]=[grid[r2][c2],grid[r1][c1]];
+        const m=findMatches();
+        if(m.size===0){
+          [grid[r1][c1],grid[r2][c2]]=[grid[r2][c2],grid[r1][c1]];
+          return false;
+        }
+        return true;
+      }
+
+      function resolveCascade(){
+        let groupsCleared=0;
+        while(true){
+          const toClear=findMatches();
+          if(toClear.size===0) break;
+          const cells=[...toClear].map(s=>s.split(',').map(Number));
+          const vis=new Set(); const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+          function dfs(r,c){const key=`${r},${c}`; if(!toClear.has(key)||vis.has(key))return 0; vis.add(key); let cnt=1; for(const[dR,dC]of dirs) cnt+=dfs(r+dR,c+dC); return cnt;}
+          let localGroups=0;
+          for(const s of toClear){ if(!vis.has(s)){ dfs(...s.split(',').map(Number)); localGroups++; } }
+          score += cells.length*1;
+          achievements += localGroups; updateHUD();
+          for(const [r,c] of cells) grid[r][c]=-1;
+          collapseAndRefill(); animate();
+          groupsCleared += localGroups;
+        }
+        if(groupsCleared>0) maybeLevelUp();
+      }
+
+      function maybeLevelUp(){
+        const nextAt = level*10;
+        const progress = Math.min(achievements/nextAt,1);
+        if (lvlBar)  lvlBar.style.width = (progress*100).toFixed(1)+'%';
+        if (lvlInfo) lvlInfo.textContent = `${achievements%nextAt} / ${nextAt}`;
+        if (achievements >= nextAt){
+          level++;
+          if (addColumnNext) cols++; else rows++;
+          addColumnNext = !addColumnNext;
+          gemTypes = Math.min(palette.length, 3+Math.floor(level/2));
+          resizeCanvas(); generateGrid(); drawBoard(); updateHUD();
+        }
+      }
+
+      function updateHUD(){
+        if (scoreEl) scoreEl.textContent = score.toLocaleString();
+        if (achEl)  achEl.textContent   = achievements.toLocaleString();
+        if (lvlEl)  lvlEl.textContent   = level;
+        if (sizeEl) sizeEl.textContent  = `${rows} × ${cols}`;
+        if (typesEl) typesEl.textContent = gemTypes;
+        const nextAt = level*10;
+        const progress = Math.min(achievements/nextAt,1);
+        if (lvlBar)  lvlBar.style.width = (progress*100).toFixed(1)+'%';
+        if (lvlInfo) lvlInfo.textContent = `${achievements%nextAt} / ${nextAt}`;
+      }
+
+      let sel=null;
+      canvas.addEventListener('click',(e)=>{
+        const rect=canvas.getBoundingClientRect();
+        const x=e.clientX-rect.left, y=e.clientY-rect.top;
+        const c=Math.floor(x/tile), r=Math.floor(y/tile);
+        if(!inBounds(r,c)) return;
+        if(!sel){ sel={r,c}; highlight(sel); }
+        else {
+          swapIfValid(sel.r,sel.c,r,c);
+          sel=null; resolveCascade(); drawBoard();
+        }
+      });
+
+      function highlight(cell){
+        drawBoard();
+        ctx.save(); ctx.lineWidth=3; ctx.strokeStyle='#f59e0b';
+        ctx.strokeRect(cell.c*tile+2, cell.r*tile+2, tile-4, tile-4); ctx.restore();
+      }
+
+      
+      if (shuffleBtn) shuffleBtn.addEventListener('click',()=>{
+        for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) grid[r][c]=newRandomGem();
+        if(findMatches().size===0){ grid[0][0]=grid[0][1]; grid[0][2]=grid[0][1]; }
+        drawBoard();
+      });
+      
+      // API pública
+      function init(){ resizeCanvas(); generateGrid(); drawBoard(); updateHUD(); }
+      init();
+
+      return {
+        getState: ()=>({score,achievements,level,rows,cols,gemTypes})
+      };
+    }
+
+    // Ejecutar cuando el DOM esté listo
+    
+    document.addEventListener('DOMContentLoaded', () => {    
+
+      const jsPsych = initJsPsych({          
+        override_safe_mode: true,          
+       
+        on_finish: async () => {
+          let participant_id = jsPsych?.data?.get()?.values()[0]?.participant_id || localStorage.getItem('participant_id') || "unknown";
+          exportDataToExcel(participant_id);
+          await saveDataToFirebase(participant_id, data_rows);
+          await markTaskComplete();
+          window.location.href = "index.html";
+        }
+      });
+      let jsPsychInstance; // Variable global para almacenar la instancia de jsPsych
+
+      const saveExitBtn = document.createElement('button');
+        saveExitBtn.id = 'saveExitBtn';
+        saveExitBtn.textContent = 'Salvar e sair';
+        saveExitBtn.style.position = 'fixed';
+        saveExitBtn.style.top = '10px';
+        saveExitBtn.style.right = '10px';
+        saveExitBtn.style.zIndex = '10001';
+        saveExitBtn.style.backgroundColor = 'white';
+        saveExitBtn.style.color = 'white';
+        saveExitBtn.style.padding = '10px 20px';
+        saveExitBtn.style.borderRadius = '8px';
+        saveExitBtn.style.cursor = 'pointer';
+        saveExitBtn.onclick = () => saveAndExit(jsPsychInstance); // Usar la instancia global
+        document.body.appendChild(saveExitBtn);
+      
+      // ======= Variables =======
+      let fixed_delays = [500, 875, 1531, 2679, 4689, 8203];
+      let A_s = 60;//Debe ser6500
+      let A_l = 190;//Debe ser 19500
+      let stepSize = 500;
+      let total_game_score = 0;
+      let last_choice_data = {};
+      
+      // ======= Instructions =======
+ 
+      let savedData = localStorage.getItem('waitlab_data');      
+      if (savedData) {
+        console.log('Saved data found:', JSON.parse(savedData)); // Imprime los datos en la consola
+        localStorage.removeItem('waitlab_data'); // Borra los datos del localStorage
+        console.log('Saved data has been deleted from localStorage.');
+      } else {  
+        console.log('No saved data found.');
+      }
+
+      data_rows = [];
+
+      function buildInitialTrials(jsPsych_instance) {  
+        const participant_id_trial = {    
+          type: jsPsychSurveyText,   
+          questions: [{      
+            prompt: '<h2>Bem-vindo ao experimento.</h2><p>Se você já leu e assinou o termo de consentimento, insira seu número de participante para começar.</p><p>Se ainda não o fez, chame o experimentador.</p>',      
+            placeholder: 'Ex: 101',      
+            required: true,     
+            name: 'participant_id'   
+          }],
+          on_load: () => {
+                  const saveExitBtn = document.getElementById('saveExitBtn');
+      if (!saveExitBtn) {
+        const newBtn = document.createElement('button');
+        newBtn.id = 'saveExitBtn';
+        newBtn.textContent = 'Salvar e sair';
+        newBtn.style.position = 'fixed';
+        newBtn.style.top = '10px';
+        newBtn.style.right = '10px';
+        newBtn.style.zIndex = '10001';
+        newBtn.style.backgroundColor = 'transparent';
+        newBtn.style.color = 'white';
+        newBtn.style.padding = '10px 20px';
+        newBtn.style.borderRadius = '8px';
+        newBtn.style.cursor = 'pointer';
+        newBtn.onclick = saveAndExit;
+        document.body.appendChild(newBtn);
+        console.log('Salvar e sair button re-added');
+      };
+            if (!window.gameState) {
+              window.gameState = {         
+              score: 0,
+              level: 1,
+              achievements: 0,
+              rows: 5,
+              cols: 5,
+              gemTypes: 3
+            };
+          }
+        },   
+        on_finish: (data) => {
+          const participant_id = data.response.participant_id;
+            if (participant_id) {
+              // Add participant_id to jsPsych data
+              jsPsych_instance.data.addProperties({
+                participant_id: participant_id
+              });
+
+              // Save participant_id to localStorage as a backup
+              localStorage.setItem('participant_id', participant_id);
+            }
+        }
+      };
+      const instructions = {    
+        type: jsPsychHtmlButtonResponse,   
+          stimulus: `<h2>Bem-vindo!</h2>
+            <p>
+              Nesta tarefa, você vai jogar um quebra cabeça onde o objetivo é alinhar 3 ou
+              <br>
+               mais cores identicas em um tabuleiro para eliminá-los e ganhar pontos. 
+               <br>
+              Para eliminar gemas, clique em duas gemas adjacentes e troque as suas posições.
+              <br>
+              A troca funciona ao juntar pelo menos três gemas consecutivas da mesma cor.
+              <br><br> 
+              O jogo será interrompido continuamente. Nas interrupções, você terá que 
+              <br> 
+              escolher entre duas opções de tempo de espera para retornar ao jogo.
+              <br>
+              Leia cada opção com atenção, pois o tempo de espera pode variar.
+              <br>
+              Não há escolhas certas ou erradas; selecione a opção que você preferir.
+              <br><br>
+              Essa tarefa tem uma duração total fixa de 40 minutos.
+              <br>As suas escolhas não vão alterar essa duração.
+              <br> <br> 
+              Clique em “Começar” para iniciar a tarefa.
+            </p>`,
+          choices: ['Começar']
+  
+      }; 
+      const initialMatch3Trial = {
+      type: jsPsychHtmlButtonResponse,
+      stimulus: () => `    
+      <div class="app">       
+      <div class="board-wrap">         
+        <canvas id="board" width="672" height="672" aria-label="tablero"></canvas>       
+        </div>        
+        <aside class="hud">       
+          <h1>Caça-cores</h1>         
+
+                        <div class="row"><span>Pontos</span><strong id="score">0</strong></div>
+                        <div class="row"><span>Nível</span><strong id="level">1</strong></div>
+                        <div>
+                            <div class="row"><span>Progresso</span><span class="muted" id="level-info"></span></div>
+                            <div class="bar"><i id="lvlbar"></i></div>
+                        </div>
+                        <div class="row"><span>Tamanho</span><strong id="size">8 × 8</strong></div>
+                        <div class="row"><span>Cores</span><strong id="types">5</strong></div>
+                        <div class="row"><span>Duração Total</span><strong id="duration">40 minutos</strong></div>
+              
+          </aside>   
+          </div> 
+          `, 
+          choices: [],  
+          trial_duration: 100,//10000
+          on_load: () => {     
+            const display_el = jsPsych.getDisplayElement();      
+            const canvas = display_el.querySelector('#board');
+            if (canvas) {
+              window._match3 = match3App('board');
+            } else {
+              console.error('Elemento #board no encontrado');
+            }
+          },
+          on_finish: () => {
+            if (window._match3) {
+              window.gameState = window._match3.getState();
+            } else {
+              console.warn('Match-3 no inicializado');
+            }
+          }
+        };
+  // Aquí retornas los tres trials
+  return [participant_id_trial, instructions, initialMatch3Trial];
+
+}
+
+      function freeTrial(delayState, current_delay_small, condition_index, response_type, trial_number_tracker, p_tracker) {  
+        return {
+          type: jsPsychHtmlButtonResponse,
+          stimulus: () => {
+            const currentScore = window.gameState?.score ?? 0;
+
+            // Inicia el decremento del puntaje cada 0.5 s
+            window._scoreInterval = setInterval(() => {
+              if (window.gameState && window.gameState.score > 0) {
+                window.gameState.score -= 1;
+                const scoreEl = document.getElementById('trial-score');
+                if (scoreEl) scoreEl.textContent = window.gameState.score;
+                const hudScore = document.getElementById('score');
+                if (hudScore) hudScore.textContent = window.gameState.score;
+              }
+            }, 500);
+
+            // HTML del trial con score arriba de las opciones
+            return `
+                <div class="app">
+                <div class="board-wrap">
+                  <div class="center-content">
+                    <p style="text-align: center; color: white;">Escolha uma opção</p>
+                    </div>
+                  </div>
+                <aside class="hud">
+                  <h1>Caça-cores</h1>
+                  <div class="row"><span>Pontos</span><strong id="score">${currentScore}</strong></div>
+                  <div class="row"><span>Nível</span><strong id="level">${window.gameState?.level ?? 1}</strong></div>
+                  <div>
+                    <div class="row"><span>Progresso</span><span class="muted" id="level-info"></span></div>
+                    <div class="bar"><i id="lvlbar"></i></div>
+                  </div>
+                  <div class="row"><span>Tamanho</span><strong id="size">${window.gameState?.rows ?? 5} × ${window.gameState?.cols ?? 5}</strong></div>
+                  <div class="row"><span>Cores</span><strong id="types">${window.gameState?.gemTypes ?? 3}</strong></div>
+                  <div class="row"><span>Duração Total</span><strong id="duration">40 minutos</strong></div>
+              
+                </aside>
+                </div>
+            `;
+          },
+          // Evalúa choices en tiempo real
+          choices: () => [
+            `mais espera`,
+            `Menos tempo de jogo`
+          ],
+          button_html: [
+            `<button class="jspsych-btn" style="background-color:#591641; color:white; padding:20px; font-size:18px; border:none; border-radius:12px;">%choice%</button>`,
+            `<button class="jspsych-btn" style="background-color:#116266; color:white; padding:20px; font-size:18px; border:none; border-radius:12px;">%choice%</button>`
+          ],
+          on_finish: (data) => {
+            if (window._scoreInterval) clearInterval(window._scoreInterval);
+
+            const currentScore = window.gameState?.score ?? 0;
+            data.final_score = currentScore;
+
+            last_choice_data.game_score = currentScore;
+            total_game_score += currentScore;
+            last_choice_data.total_game_score = total_game_score;
+
+            const choice = data.response === 0 ? 'left' : 'right';
+            const choice_num = data.response === 0 ? 1 : 2;
+            data.chosen_option = choice;
+            response_type.push(choice);
+            trial_number_tracker.count++;
+            // Keep a history of last two choices
+            if (!p_tracker.last_two) p_tracker.last_two = [];
+
+            // Add the current choice to the history
+            p_tracker.last_two.push(choice);
+
+            // Keep only the last 2 entries
+            if (p_tracker.last_two.length > 2) p_tracker.last_two.shift();
+
+            // Check if the last two choices were the same
+            if (p_tracker.last_two.length === 2 && p_tracker.last_two[0] === 'left' && p_tracker.last_two[1] === 'left') {
+              stepSize += stepSize * 0.5; // Aumenta el stepSize en un 50%
+              if (stepSize > fixed_delays[condition_index] * 4) stepSize = fixed_delays[condition_index] * 4;
+              console.log(`Step size increased to ${stepSize}`);
+            }
+            if (p_tracker.last !== null && choice !== p_tracker.last) {
+              stepSize = Math.max(1000, stepSize - 2000);
+              console.log(`Preference changed. Step size decreased to ${stepSize}`);
+            }
+
+            if (choice === 'left') {
+              delayState.large += stepSize;
+            } else {
+              delayState.large = Math.max(delayState.large - stepSize, current_delay_small);
+            }
+
+            if (p_tracker.last !== null) {
+              if (choice !== p_tracker.last) p_tracker.p_changes++;
+              else if (choice === 'right') p_tracker.no_change++;
+            }
+            p_tracker.last = choice;
+
+            last_choice_data = {
+              condition: fixed_delays[condition_index],
+              A_l: A_l,
+              A_s: A_s,
+              choice: choice,
+              choice_num: choice_num,
+              delay_large: delayState.large,
+              delay_small: current_delay_small,
+              latency: data.rt,
+              trial_number: trial_number_tracker.count
+            };
+            console.table(data_rows);
+          }
+        };
+      }
+    
+      function createDelay(delayState, current_delay_small) {
+        return {
+          type: jsPsychHtmlButtonResponse,
+          stimulus: () => {
+            const last = jsPsych.data.get().last(1).values()[0];
+            const color = last.response === 0 ? '#591641' : '#116266';
+            const delay = last.response === 0 ? delayState.large : current_delay_small;
+            document.body.style.backgroundColor = color;
+            
+            const currentScore = window.gameState?.score ?? 0;
+            // Inicia el decremento del puntaje cada 0.5 s
+            window._scoreInterval = setInterval(() => {
+              if (window.gameState && window.gameState.score > 0) {
+                window.gameState.score -= 1;
+                const scoreEl = document.getElementById('delay-score');
+                if (scoreEl) scoreEl.textContent = window.gameState.score;
+                const hudScore = document.getElementById('score');
+                if (hudScore) hudScore.textContent = window.gameState.score;
+              }
+            }, 500);
+            // 🧠 Devuelve el HTML del delay con contador visible
+              return `
+                <div style="background-color:${color};">
+                <div class="app">
+                <div class="board-wrap">
+                  </div>
+                <aside class="hud">
+                  <h1>Caça-cores</h1>
+                  <div class="row"><span>Pontos</span><strong id="score">${currentScore}</strong></div>
+                  <div class="row"><span>Nível</span><strong id="level">${window.gameState?.level ?? 1}</strong></div>
+                  <div>
+                    <div class="row"><span>Progresso</span><span class="muted" id="level-info"></span></div>
+                    <div class="bar"><i id="lvlbar"></i></div>
+                  </div>
+                  <div class="row"><span>Tamanho</span><strong id="size">${window.gameState?.rows ?? 5} × ${window.gameState?.cols ?? 5}</strong></div>
+                  <div class="row"><span>Cores</span><strong id="types">${window.gameState?.gemTypes ?? 3}</strong></div>
+                  <div class="row"><span>Duração Total</span><strong id="duration">40 minutos</strong></div>
+              
+                </aside>
+              </div>
+                </div>
+              `;
+            },
+          choices: [],
+          trial_duration: () => {
+            const last = jsPsych.data.get().last(1).values()[0];
+            return last.response === 0 ? delayState.large : current_delay_small;
+          },
+          on_finish: () => {
+            document.body.style.backgroundColor = '#0f1220';
+            if (window._scoreInterval) clearInterval(window._scoreInterval);
+          }
+        };
+      }
+      
+      function createMatch3Trial() {
+        return {
+            type: jsPsychHtmlButtonResponse,
+            stimulus: () => `
+                <div class="app">
+                    <div class="board-wrap">
+                        <canvas id="board" width="672" height="672" aria-label="tablero"></canvas>
+                    </div>
+                    <aside class="hud">
+                        <h1>Caça-cores</h1>
+                        <div class="row"><span>Pontos</span><strong id="score">0</strong></div>
+                        <div class="row"><span>Nível</span><strong id="level">1</strong></div>
+                        <div>
+                            <div class="row"><span>Progresso</span><span class="muted" id="level-info"></span></div>
+                            <div class="bar"><i id="lvlbar"></i></div>
+                        </div>
+                        <div class="row"><span>Tamanho</span><strong id="size">8 × 8</strong></div>
+                        <div class="row"><span>Cores</span><strong id="types">5</strong></div>
+                        <div class="row"><span>Duração Total</span><strong id="duration">40 minutos</strong></div>
+
+                        <div class="row"><button id="shuffle">Mezclar</button></div>
+                        
+              
+                        <p class="muted">Tip: clique em dois gemas adjacentes para troca-las de posição. A troca funciona quando tem pelo menos três gemas continuas da mesma cor.</p>
+                    </aside>
+                </div>
+            `,
+            choices: [],
+            trial_duration: () => {
+                // Get data from the trial 2 steps back (the choice trial)
+                const prevTrialData = jsPsych.data.get().last(2).values()[0];
+                const choice = prevTrialData.response === 0 ? 'left' : 'right';
+                // time of game
+                return choice === 'left' ? A_l : A_s;
+            },
+            on_load: () => {
+                if(window._scoreInterval) clearInterval(window._scoreInterval);
+                  
+                // Calculate the level based on the score
+                const currentScore = window.gameState?.score ?? 0;
+                const newLevel = Math.floor(currentScore / 200) + 1; // Example: 200 points per level
+                const newAchievements = Math.floor(currentScore / 200)+1; // Example: 20 points per achievement
+
+                // Update the grid size based on the level
+                const newGridSize = Math.min(14, 5 + Math.floor(newLevel / 2)); // Example: Start at 5x5, max at 10x10
+                window.gameState.level = newLevel;
+                window.gameState.achievements = newAchievements;
+                window.gameState.rows = newGridSize;
+                window.gameState.cols = newGridSize;                
+
+                window._match3 = match3App('board', window.gameState);
+
+                if (window.gameState) {
+                 document.getElementById('score').textContent = window.gameState.score;
+                 document.getElementById('level').textContent = window.gameState.level;
+                 document.getElementById('size').textContent = `${window.gameState.rows} × ${window.gameState.cols}`;
+                 document.getElementById('types').textContent = window.gameState.gemTypes;
+                 const progress = Math.min(window.gameState.achievements / (window.gameState.level * 100)+ 1);
+                 document.getElementById('lvlbar').style.width = (progress * 1).toFixed(1) + '%';
+                 document.getElementById('level-info').textContent = `${window.gameState.achievements % (window.gameState.level * 10)} / ${window.gameState.level * 10}`;
+                }  
+            },
+            on_finish: () => {
+                if (window._match3) {
+                    window.gameState = window._match3.getState();
+                    const current_score = window.gameState.score;
+                    total_game_score += current_score;
+                    last_choice_data.game_score = current_score;
+                    last_choice_data.total_game_score = total_game_score;
+                    last_choice_data._data_level = window.gameState.level;
+                    last_choice_data._data_achievements = window.gameState.achievements;
+                    last_choice_data._data_rows = window.gameState.rows;
+                    last_choice_data._data_cols = window.gameState.cols;
+                    last_choice_data._data_gemTypes = window.gameState.gemTypes;
+                    data_rows.push(last_choice_data);
+                }
+            }
+        };
+    }
+
+      function createITI() {
+        return {
+          type: jsPsychHtmlButtonResponse,
+          stimulus: () => {
+            const last = jsPsych.data.get().last(1).values()[0];
+            const color = '#0f1220';
+            document.body.style.backgroundColor = color;
+            return `<div style="height:100vh;"></div>`; 
+          },
+          choices: [],
+          trial_duration: () => {
+            const last = jsPsych.data.get().last(1).values()[0];
+            return last.response === 0 ?1500 : 3500;//estaba en 1500 y 3500
+          },
+          on_finish: () => {
+            document.body.style.backgroundColor = '#0f1220'; 
+          }
+        };
+      }
+
+      function createCOD() {
+        return {
+          type: jsPsychHtmlButtonResponse,
+          stimulus: () => {
+            const lastTwo = jsPsych.data.get().last(2).values();
+            if (lastTwo.length < 2) return `<div style="height:100vh;"></div>`; // no aplica
+            const change = lastTwo[0].response !== lastTwo[1].response;
+            if (!change) return `<div style="height:0;"></div>`; // no aplica
+            const color = '#e879f9';
+            document.body.style.backgroundColor = color;
+            return `<div style="height:100vh;"></div>`; // pantalla vacía
+          },
+          choices: [],
+          trial_duration: () => {
+            const lastTwo = jsPsych.data.get().last(2).values();
+            if (lastTwo.length < 2) return 0;
+            return lastTwo[0].response !== lastTwo[1].response ? 1000 : 0;
+          },
+          on_finish: () => {
+            document.body.style.backgroundColor = '#0f1220';
+          }
+        };
+      }
+
+      function forcedTrialLeft(delayState, current_delay_small, condition_index, response_type, trial_number_tracker, p_tracker) {  
+        return {
+          type: jsPsychHtmlButtonResponse,
+          stimulus: () => {
+            const currentScore = window.gameState?.score ?? 0;
+
+            // Inicia el decremento del puntaje cada 0.5 s
+            window._scoreInterval = setInterval(() => {
+              if (window.gameState && window.gameState.score > 0) {
+                window.gameState.score -= 1;
+                const scoreEl = document.getElementById('trial-score');
+                if (scoreEl) scoreEl.textContent = window.gameState.score;
+                const hudScore = document.getElementById('score');
+                if (hudScore) hudScore.textContent = window.gameState.score;
+              }
+            }, 500);
+
+            // HTML del trial con score arriba de las opciones
+              return `
+                <div class="app">
+                <div class="board-wrap">
+                  <div class="center-content">
+                    <p style="text-align: center; color: white;">Escolha a única opção</p>
+                    </div>
+                  </div>
+                <aside class="hud">
+                  <h1>Caça-cores</h1>
+                  <div class="row"><span>Pontos</span><strong id="score">${currentScore}</strong></div>
+                  <div class="row"><span>Nível</span><strong id="level">${window.gameState?.level ?? 1}</strong></div>
+                  <div>
+                    <div class="row"><span>Progresso</span><span class="muted" id="level-info"></span></div>
+                    <div class="bar"><i id="lvlbar"></i></div>
+                  </div>
+                  <div class="row"><span>Tamanho</span><strong id="size">${window.gameState?.rows ?? 5} × ${window.gameState?.cols ?? 5}</strong></div>
+                  <div class="row"><span>Cores</span><strong id="types">${window.gameState?.gemTypes ?? 3}</strong></div>
+                   <div class="row"><span>Duração Total</span><strong id="duration">40 minutos</strong></div>
+              
+                </aside>
+              </div>
+            `;
+          },
+          choices: () => [
+            `mais espera`,
+          ],
+          button_html: [
+            `<button class="jspsych-btn" style="background-color:#591641; color:white; padding:20px; font-size:18px; border:none; border-radius:12px;">%choice%</button>`,
+          ],
+          on_finish: (data) => {
+            if (window._scoreInterval) clearInterval(window._scoreInterval);
+
+            const currentScore = window.gameState?.score ?? 0;
+            data.final_score = currentScore;
+
+            // Forzamos la elección "left" ya que solo hay un botón
+            const choice = 'forced';
+            const choice_num = 0;
+            data.response = 0;
+
+            data.chosen_option = choice;
+            response_type.push(choice);
+            trial_number_tracker.count++;
+
+            // Logging sin actualizar delayState
+            last_choice_data = {
+              condition: fixed_delays[condition_index],
+              A_l: A_l,
+              A_s: A_s,
+              choice: choice,
+              choice_num: choice_num,
+              delay_large: delayState.large,  // no cambia
+              delay_small: current_delay_small,
+              latency: data.rt,
+              trial_number: trial_number_tracker.count,
+              game_score: currentScore,
+              total_game_score: (total_game_score += currentScore)
+            };
+
+          }
+        };
+      }
+
+      function forcedTrialRight(delayState, current_delay_small, condition_index, response_type, trial_number_tracker, p_tracker) {  
+        return {
+          type: jsPsychHtmlButtonResponse,
+          stimulus: () => {
+            const currentScore = window.gameState?.score ?? 0;
+
+            // Inicia el decremento del puntaje cada 0.5 s
+            window._scoreInterval = setInterval(() => {
+              if (window.gameState && window.gameState.score > 0) {
+                window.gameState.score -= 1;
+                const scoreEl = document.getElementById('trial-score');
+                if (scoreEl) scoreEl.textContent = window.gameState.score;
+                const hudScore = document.getElementById('score');
+                if (hudScore) hudScore.textContent = window.gameState.score;
+              }
+            }, 500);
+
+            // HTML del trial con score arriba de las opciones
+            return `
+                <div class="app">
+                <div class="board-wrap">
+                  <div class="center-content">
+                    <p style="text-align: center; color: white;">Escolha a única opção</p>
+                    </div>
+                  </div>
+                <aside class="hud">
+                  <h1>Caça-cores</h1>
+                        <div class="row"><span>Pontos</span><strong id="score">0</strong></div>
+                        <div class="row"><span>Nível</span><strong id="level">1</strong></div>
+                        <div>
+                            <div class="row"><span>Progresso</span><span class="muted" id="level-info"></span></div>
+                            <div class="bar"><i id="lvlbar"></i></div>
+                        </div>
+                        <div class="row"><span>Tamanho</span><strong id="size">8 × 8</strong></div>
+                        <div class="row"><span>Cores</span><strong id="types">5</strong></div>
+                        <div class="row"><span>Duração Total</span><strong id="duration">40 minutos</strong></div>
+            
+                </aside>
+              </div>
+            `;
+          },
+          choices: () => [
+            `Menos tempo de jogo`
+          ],
+          button_html: [
+            `<button class="jspsych-btn" style="background-color:#116266; color:white; padding:20px; font-size:18px; border:none; border-radius:12px;">%choice%</button>`
+          ],
+          on_finish: (data) => {
+            if (window._scoreInterval) clearInterval(window._scoreInterval);
+
+            const currentScore = window.gameState?.score ?? 0;
+            data.final_score = currentScore;
+
+            // Forzamos la elección "right" ya que solo hay un botón
+            const choice = 'forced';
+            const choice_num = 0;
+            data.response = 1;
+
+            data.chosen_option = choice;
+            response_type.push(choice);
+            trial_number_tracker.count++;
+
+            // Logging sin actualizar delayState
+            last_choice_data = {
+              condition: fixed_delays[condition_index],
+              A_l: A_l,
+              A_s: A_s,
+              choice: choice,
+              choice_num: choice_num,
+              delay_large: delayState.large,  // no cambia
+              delay_small: current_delay_small,
+              latency: data.rt,
+              trial_number: trial_number_tracker.count,
+              game_score: currentScore,
+              total_game_score: (total_game_score += currentScore)
+            };
+
+          }
+        };
+      }
+
+      // ======= Build Loop for Each Condition =======
+      function buildConditionsLoop() {
+        const condition_timelines = [];
+        let last_choice = null;  // track previous choice across trials
+
+        for (let i = 0; i < fixed_delays.length; i++) {
+          let current_delay_small = fixed_delays[i];
+          let initial_delay_large = fixed_delays[i] * 3;
+          let delayState = { large: initial_delay_large };
+          let response_type = [];
+          let trial_number_tracker = { count: 0 };
+          let p_tracker = { p_changes: 0, no_change: 0, last: null };
+          let loop_counter = 0;
+
+          // === Bloque forzado que se muestra SOLO UNA VEZ ===
+          condition_timelines.push(
+            forcedTrialLeft(delayState, current_delay_small, i, response_type, trial_number_tracker, p_tracker),
+            createDelay(delayState, current_delay_small),
+            createMatch3Trial(),
+            createITI(),
+
+            forcedTrialRight(delayState, current_delay_small, i, response_type, trial_number_tracker, p_tracker),
+            createDelay(delayState, current_delay_small),
+            createMatch3Trial(),
+            createITI()
+        );
+
+          // === Loop de freeTrials ===
+          const loop_node = {
+            timeline: [
+              freeTrial(delayState, current_delay_small, i, response_type, trial_number_tracker, p_tracker),
+              createDelay(delayState, current_delay_small),
+              createMatch3Trial(),
+              createITI(),
+              {
+                type: jsPsychHtmlButtonResponse,
+                stimulus: function() {
+                  if (last_choice !== null && last_choice !== p_tracker.last) {
+                    const color = p_tracker.last === 'left' ? '#591641' : '#116266';
+                    return `<div style="background-color:'#0f1220'; height:200px; text-align:center; color:white; padding-top:40px;"></div>`;
+                  } else {
+                    return '';
+                  }
+                },
+                choices: [],
+                trial_duration: 1000,
+                on_finish: function() { last_choice = p_tracker.last; },
+                conditional_function: function() {
+                  return last_choice !== null && last_choice !== p_tracker.last;
+                }
+              }
+            ],
+            loop_function: function(data) {
+              loop_counter++;
+              console.log(`Loop iteration ${loop_counter} for condition ${i}, delay_large=${delayState.large}`);
+              return !(
+                (p_tracker.p_changes > 3 && response_type.length >= 3) ||
+                p_tracker.no_change > 6 ||
+                response_type.length >= 8 
+              );
+            }
+          };
+
+          condition_timelines.push(loop_node);
+        }
+
+        return condition_timelines;
+      }
+
+      // ======= Final Message =======
+      const final_message = {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: () => {
+          const finalScore = window.gameState?.score ?? 0; // Access the final score from window.gameState
+          return `<p>Tarefa concluída! Você fez ${finalScore} pontos.</p><p>Obrigada por participar. Por favor, continue para a próxima tarefa.</p>`;
+        },
+        choices: ['Fechar']
+      };
+
+      // ======= Main Timeline and Run =======
+      const main_timeline = [
+        ...buildInitialTrials(jsPsych),  
+        ...buildConditionsLoop(),
+        final_message
+      ];
+        jsPsych.run(main_timeline);
+      
+    });
+    </script>
+    </body>
+    </html>

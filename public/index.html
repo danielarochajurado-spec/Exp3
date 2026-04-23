@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Menu de Tarefas</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 10%;
+      background: #f7f7f7;
+    }
+
+    button {
+      font-size: 18px;
+      padding: 10px 20px;
+      margin: 10px;
+      cursor: pointer;
+      border-radius: 8px;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      margin: 10px;
+    }
+  </style>
+</head>
+
+<body>
+<h3>Experimentador, se estamos iniciando, diga: Hoje você vai realizar duas tarefas muito similares, cada uma de 30 minutos. Entre tarefas, você vai descansar 10 min. Aproveite agora para responder mensagens, ir ao banheiro, tomar agua ou outras necesidades. Se é o intervalo: Você tem 10 minutos de descanso. Pode comer alguma coisa, tomar agua, ir ao banheiro, responder o celular, etc. Por favor, volte em 10 minutos</h3>
+  <h1> Experimentador, selecione a tarefa</h1>
+  <ul id="taskList"></ul>
+
+  <script>
+    const tasks = [
+      { name: 'Basic Framing', file: 'basicFramming.html' },
+      { name: 'Ratio Framing', file: 'ratioFraming.html' },
+      { name: 'Relative Framing', file: 'relativeFraming.html' }
+    ];
+
+    const list = document.getElementById('taskList');
+
+    tasks.forEach(task => {
+      const li = document.createElement('li');
+
+      const button = document.createElement('button');
+      button.textContent = task.name;
+
+      button.onclick = () => {
+        window.location.href = task.file;
+      };
+
+      li.appendChild(button);
+      list.appendChild(li);
+    });
+  </script>
+
+</body>
+</html>
