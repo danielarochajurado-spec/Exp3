@@ -739,11 +739,11 @@
                         const small = current_delay_small;
                         const ratio = large / small;
                         const ratioText = Math.abs(ratio - 1) < 0.01
-                            ? "Esperar o mesmo intervalo para jogar por mais tempo"
-                            : `Esperar ${formatSmartNumber(ratio, 1)} vezes a outra espera para jogar por mais tempo`;
+                            ? "Esperar o mesmo intervalo para jogar por um tempo longo"
+                            : `Esperar ${formatSmartNumber(ratio, 1)} vezes a outra espera para jogar por um tempo longo`;
 
                         return [
-                            `Esperar ${formatSeconds(small)} seg. para jogar por menos tempo`,
+                            `Esperar ${formatSeconds(small)} seg. para jogar por um tempo curto`,
                             ratioText
                         ];
                     },
@@ -1075,7 +1075,7 @@
                         const ratio = large / small;
 
                         return [
-                            `Esperar ${formatSmartNumber(ratio, 1)} vezes a espera da outra opção para jogar por mais tempo`
+                            `Esperar ${formatSmartNumber(ratio, 1)} vezes a espera da outra opção para jogar por um tempo longo`
                         ];
                     },
                     button_html: [
@@ -1153,7 +1153,7 @@
             `;
                     },
                     choices: () => [
-                        `Esperar ${(current_delay_small / 1000).toFixed(1)} seg. para jogar por menos tempo`
+                        `Esperar ${(current_delay_small / 1000).toFixed(1)} seg. para jogar por um tempo curto`
                     ],
 
                     button_html: [
