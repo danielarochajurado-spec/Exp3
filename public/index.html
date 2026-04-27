@@ -33,15 +33,34 @@
 </head>
 
 <body>
-<h3>Experimentador, se estamos iniciando, diga: Hoje você vai realizar duas tarefas muito similares, cada uma de 30 minutos. Entre tarefas, você vai descansar 10 min. Aproveite agora para responder mensagens, ir ao banheiro, tomar agua ou outras necesidades. Se é o intervalo: Você tem 10 minutos de descanso. Pode comer alguma coisa, tomar agua, ir ao banheiro, responder o celular, etc. Por favor, volte em 10 minutos</h3>
-  <h1> Experimentador, selecione a tarefa</h1>
+  <h1> Experimentador, leia e depois selecione a tarefa</h1>
+  <h3>Se for o primeiro bloco:</h3>
+<p>
+Hoje você vai fazer duas tarefas bem parecidas, cada uma com duração de 30 minutos. 
+Entre elas, haverá um intervalo de 10 minutos.
+Aproveite esse tempo agora para responder mensagens, ir ao banheiro, beber água ou fazer o que precisar.
+</p>
+
+<h3>Se for o intervalo:</h3>
+<p>
+Agora você tem 10 minutos de descanso.
+Pode aproveitar para comer algo, beber água, ir ao banheiro ou mexer no celular.
+Por favor, volte em 10 minutos.
+</p>
   <ul id="taskList"></ul>
 
   <script>
     const tasks = [
       { name: 'Basic Framing', file: 'basicFramming.html' },
       { name: 'Ratio Framing', file: 'ratioFraming.html' },
-      { name: 'Relative Framing', file: 'relativeFraming.html' }
+      { name: 'Relative Framing', file: 'relativeFraming.html' },
+      { name: 'Suboptimal Choice', file: 'SuboptimalChoice.html' },
+      { name: 'Nivel 1', file: 'n1A_gen.html' }, 
+      { name: 'Nivel 2', file: 'n2A_genD_gen.html' },
+      { name: 'Nivel 3', file: 'n3A_spe.html' },
+      { name: 'Nivel 4', file: 'n4A_speD_spe.html' }
+      
+
     ];
 
     const list = document.getElementById('taskList');

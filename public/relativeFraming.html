@@ -532,7 +532,8 @@
             document.body.appendChild(saveExitBtn);
 
             // ======= Variables =======
-            let fixed_delays = [500, 1500, 2600, 4000, 5500, 7300, 9400, 11300, 13500, 15800, 18200, 20700, 23400, 26200, 29000];//La secuencia se genera usando una función de potencia derivada de la Ley de potencia de Stevens, donde cada intervalo no crece por una razón fija (como en una progresión geométrica), sino como una transformación no lineal del índice del término. En concreto, se toma un índice n (1, 2, 3, …) que representa pasos iguales en “percepción subjetiva”, y se convierte a tiempo físico mediante la fórmula I(n)=0.5⋅n 1.25, donde el exponente 1.25 proviene de invertir el parámetro típico de Stevens para tiempo ( a≈0.8). El factor 0.5 simplemente ajusta la escala inicial. El resultado es una secuencia donde los incrementos en tiempo parecen cada vez mayores físicamente, pero corresponden a aumentos aproximadamente constantes en cómo el participante percibe la duración.
+            let fixed_delays = [500, 2000, 4500, 8000, 12500, 18000, 24500, 32000, 40500, 50000];
+      
             let framing = 'difference';
             let A_s = 5000//
             let A_l = 20000//
@@ -707,7 +708,7 @@
                 <div class="app">
                 <div class="board-wrap">
                   <div class="center-content">
-                    <p style="text-align: center; color: white;">Escolha uma opção</p>
+                    <p style="text-align: center; color: white;">Escolha a opção que você preferir</p>
                     </div>
                   </div>
                 <aside class="hud">
@@ -1201,7 +1202,7 @@
                     let condition_closed = false;
 
                     let current_delay_small = fixed_delays[i];
-                    let initial_delay_large = fixed_delays[i] * 2;
+                    let initial_delay_large = fixed_delays[i] * 4;
                     let delayState = { large: initial_delay_large };
                     let response_type = [];
                     let trial_number_tracker = { count: 0 };
