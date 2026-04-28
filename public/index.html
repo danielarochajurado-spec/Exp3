@@ -21,14 +21,29 @@
       border-radius: 8px;
     }
 
-    ul {
-      list-style: none;
-      padding: 0;
-    }
+ul {
+  list-style: none;
+  padding: 0;
+
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* dos columnas iguales */
+  gap: 10px; /* espacio entre botones */
+  max-width: 500px;
+  margin: 0 auto; /* centrar el bloque */
+}
+
 
     li {
-      margin: 10px;
+      margin: 0;
     }
+
+    button {
+  width: 100%; /* que ocupe toda la celda */
+  font-size: 18px;
+  padding: 12px;
+  cursor: pointer;
+  border-radius: 8px;
+}
   </style>
 </head>
 
@@ -36,25 +51,25 @@
   <h1> Experimentador, leia e depois selecione a tarefa</h1>
   <h3>Se for o primeiro bloco:</h3>
 <p>
-Hoje você vai fazer duas tarefas bem parecidas, cada uma com duração de 30 minutos. 
-Entre elas, haverá um intervalo de 10 minutos.
+Hoje você vai fazer uma tarefa dividida em três partes, cada uma com duração de 20 minutos. 
+Entre elas, haverá um intervalo de 5 minutos.
 Aproveite esse tempo agora para responder mensagens, ir ao banheiro, beber água ou fazer o que precisar.
 </p>
 
 <h3>Se for o intervalo:</h3>
 <p>
-Agora você tem 10 minutos de descanso.
+Agora você tem 5 minutos de descanso.
 Pode aproveitar para comer algo, beber água, ir ao banheiro ou mexer no celular.
-Por favor, volte em 10 minutos.
+Por favor, volte em 5 minutos.
 </p>
   <ul id="taskList"></ul>
 
   <script>
     const tasks = [
-      { name: 'Basic Framing', file: 'basicFramming.html' },
-      { name: 'Ratio Framing', file: 'ratioFraming.html' },
-      { name: 'Relative Framing', file: 'relativeFraming.html' },
-      { name: 'Suboptimal Choice', file: 'SuboptimalChoice.html' },
+      { name: 'Basic', file: 'basicFramming.html' },
+      { name: 'Ratio', file: 'ratioFraming.html' },
+      { name: 'Relative', file: 'relativeFraming.html' },
+      { name: 'Suboptimal', file: 'SuboptimalChoice.html'},
       { name: 'Nivel 1', file: 'n1A_gen.html' }, 
       { name: 'Nivel 2', file: 'n2A_genD_gen.html' },
       { name: 'Nivel 3', file: 'n3A_spe.html' },

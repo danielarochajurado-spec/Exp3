@@ -537,7 +537,7 @@
             let framing = 'difference';
             let A_s = 5000//
             let A_l = 20000//
-            let stepSize = 500;
+            let stepSize = 1000;
             let total_game_score = 0;
             let last_choice_data = {};
             const experimentStartTime = Date.now();
@@ -629,10 +629,12 @@
                  <br>
                  Não há escolhas certas ou erradas; selecione a opção que você preferir.
                 <br><br>
-                Esta tarefa tem uma duração total fixa de 30 minutos e
+                 Esta tarefa tem uma duração total fixa de 1 hora, e está dividida em 
                 <br>
-                as suas escolhas não alteram essa duração.
-                <br><br>
+                3 partes de 20 minutos cada.
+                  <br>
+                As suas escolhas não alteram a duração total da tarefa.
+                                <br><br>
                 Clique em “Começar” para iniciar a tarefa.
                 </p>`,
                     choices: ['Começar']
@@ -656,7 +658,7 @@
                         </div>
                         <div class="row"><span>Tamanho</span><strong id="size">8 × 8</strong></div>
                         <div class="row"><span>Cores</span><strong id="types">5</strong></div>
-                        <div class="row"><span>Duração Total</span><strong id="duration">30 minutos</strong></div>
+                        <div class="row"><span>Duração Total</span><strong id="duration">1 hora</strong></div>
                         <p class="muted">Tip: clique em dois peças adjacentes para troca-las de posição. A troca funciona quando tem pelo menos três peças continuas da mesma cor.</p>
               
           </aside>   
@@ -721,7 +723,7 @@
                   </div>
                   <div class="row"><span>Tamanho</span><strong id="size">${window.gameState?.rows ?? 5} × ${window.gameState?.cols ?? 5}</strong></div>
                   <div class="row"><span>Cores</span><strong id="types">${window.gameState?.gemTypes ?? 3}</strong></div>
-                  <div class="row"><span>Duração Total</span><strong id="duration">30 minutos</strong></div>
+                  <div class="row"><span>Duração Total</span><strong id="duration">1 hora</strong></div>
                   
               
                 </aside>
@@ -880,7 +882,7 @@
                   </div>
                   <div class="row"><span>Tamanho</span><strong id="size">${window.gameState?.rows ?? 5} × ${window.gameState?.cols ?? 5}</strong></div>
                   <div class="row"><span>Cores</span><strong id="types">${window.gameState?.gemTypes ?? 3}</strong></div>
-                  <div class="row"><span>Duração Total</span><strong id="duration">30 minutos</strong></div>
+                  <div class="row"><span>Duração Total</span><strong id="duration">1 hora</strong></div>
               
                 </aside>
               </div>
@@ -917,7 +919,7 @@
                         </div>
                         <div class="row"><span>Tamanho</span><strong id="size">8 × 8</strong></div>
                         <div class="row"><span>Cores</span><strong id="types">5</strong></div>
-                        <div class="row"><span>Duração Total</span><strong id="duration">30 minutos</strong></div>
+                        <div class="row"><span>Duração Total</span><strong id="duration">1 hora</strong></div>
 
                         <div class="row"><button id="shuffle">Mezclar</button></div>
                         
@@ -1057,7 +1059,7 @@
                   </div>
                   <div class="row"><span>Tamanho</span><strong id="size">${window.gameState?.rows ?? 5} × ${window.gameState?.cols ?? 5}</strong></div>
                   <div class="row"><span>Cores</span><strong id="types">${window.gameState?.gemTypes ?? 3}</strong></div>
-                   <div class="row"><span>Duração Total</span><strong id="duration">30 minutos</strong></div>
+                   <div class="row"><span>Duração Total</span><strong id="duration">1 hora</strong></div>
               
                 </aside>
               </div>
@@ -1145,7 +1147,7 @@
                         </div>
                         <div class="row"><span>Tamanho</span><strong id="size">8 × 8</strong></div>
                         <div class="row"><span>Cores</span><strong id="types">5</strong></div>
-                        <div class="row"><span>Duração Total</span><strong id="duration">30 minutos</strong></div>
+                        <div class="row"><span>Duração Total</span><strong id="duration">1 hora</strong></div>
             
                 </aside>
               </div>
@@ -1300,7 +1302,9 @@
                     jsPsych.pauseExperiment();
                     jsPsych.getDisplayElement().innerHTML = `    
                     <div style="color:white; text-align:center; margin-top:20vh;">      
-                        Tarefa atual concluída. Obrigada por participar. Chame ao experimentador. <br><br>      
+                        Vamos fazer uma pausa de 5 minutos. <br>      
+                         Se quiser, pode aproveitar para descansar. <br>      
+                         O jogo continuará após a pausa. <br><br>
                         Experimentador: Presione "Salvar e sair" e depois guarde o excel.    
                         </div>  
                         `;

@@ -537,7 +537,7 @@
       let framing = 'basic';
       let A_s = 5000//
       let A_l = 20000//
-      let stepSize = 500;
+      let stepSize = 1000;
       let total_game_score = 0;
       let last_choice_data = {};
       const experimentStartTime = Date.now();
@@ -1290,7 +1290,9 @@
           jsPsych.pauseExperiment();
           jsPsych.getDisplayElement().innerHTML = `    
                     <div style="color:white; text-align:center; margin-top:20vh;">      
-                        Tarefa atual concluída. Obrigada por participar. Chame ao experimentador. <br><br>      
+                        Vamos fazer uma pausa de 5 minutos. <br>      
+                         Se quiser, pode aproveitar para descansar. <br>      
+                         O jogo continuará após a pausa. <br><br>
                         Experimentador: Presione "Salvar e sair" e depois guarde o excel.    
                         </div>  
                         `;
