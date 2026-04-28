@@ -740,8 +740,8 @@
 
             return [
 
-              `pouca espera, e ${A_s/1000} seg. de jogo`,
-              `longa espera, e ${A_l/1000} seg. de jogo`,
+                `${(current_delay_small / 1000).toFixed(1)} seg. de espera, pouco tempo de jogo`,           
+                `${(delayState.large / 1000).toFixed(1)} seg. de espera, muito tempo de jogo`,
        
             ];
           },
@@ -1066,8 +1066,8 @@
               return formatSmartNumber(ms / 1000, 2);
             }
 
-            return [
-              `longa espera e ${A_l/1000} seg. de jogo`,
+            return [           
+                `${(delayState.large / 1000).toFixed(1)} seg. de espera, muito tempo de jogo`
             ];
           },
           button_html: [
@@ -1145,7 +1145,8 @@
             `;
           },
           choices: () => [
-             `pouca espera, ${A_s/1000} seg. de jogo`,
+          `${(current_delay_small / 1000).toFixed(1)} seg. de espera, pouco tempo de jogo`
+
                  ],
 
           button_html: [
