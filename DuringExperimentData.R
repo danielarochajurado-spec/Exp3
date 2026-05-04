@@ -15,6 +15,7 @@ library(performance)
 library(ggeffects)
 library(emmeans)
 
+library(lme4)
 
 
 theme_set(theme_classic())
@@ -139,7 +140,7 @@ plotIP <- ggplot(ip, aes(condition, ip, color = framing)) +
   geom_point(alpha = 0.3) +
   geom_line(aes(group = framing, alpha = 0.3))+
   facet_wrap(~ participant, scales = "free") +
-  labs(title = "Raw Data", color = "Framing")
+  labs(title = "Indifference Points", color = "Framing")
 
 plotIP
 
@@ -261,14 +262,20 @@ ggplot(linearModel, aes(x = slope)) +
 
 # modelos BORRADOR TODO ----
 
-    condition_sequence <- seq(min(rawDataFree$condition),
+ condition_sequence <- seq(min(rawDataFree$condition),
                   max(rawDataFree$condition),
                   length.out = 50)
+  
+  model <- glmer(choice ~ condition * framing + (1 + condition | participant), 
+                 family = binomial, data = rawDataFree)
+  
+  library(lattice)
+  dotplot(ranef(model, condVar = TRUE))
   
   emm <- emmeans(
     model,
     ~ framing | condition,
-    at = list(condition = cond_sequence),
+    at = list(condition = condition_sequence),
     type = "response"  
   )
 
@@ -276,21 +283,13 @@ ggplot(linearModel, aes(x = slope)) +
   
   ggplot(df_emm, aes(x = condition, y = prob, color = framing)) +
     geom_line() +
+    geom_point(df_prob, aes ())
     geom_ribbon(aes(ymin = asymp.LCL, ymax = asymp.UCL, fill = framing),
                 alpha = 0.2, color = NA) +
+    facet_wrap(~ framing)+
     labs(
       y = "P(elegir large)",
       x = "Condition (centrada)",
       title = "Curvas predichas del modelo"
     )
 
-  logistic <- glmer(
-    choice ~ condition * framing + (1 + condition | participant),
-    data = rawDataFree,
-  family = binomial)  
-
-  
-  pred <- ggpredict(logistic, terms = c("condition", "framing"))
-  
-  plot(pred)
-  

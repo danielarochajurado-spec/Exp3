@@ -1185,7 +1185,7 @@
         };
       }
 
-      const maxDuration = 2 * 60 * 1000;//establecida en 30
+      const maxDuration = 15 * 60 * 1000;//establecida en 30
       let completed_conditions = 0;
       // ======= Condiciones de orden y cierre =======
       function buildConditionsLoop() {
@@ -1242,7 +1242,7 @@
               );
               const elapsed = Date.now() - experimentStartTime;
               const time_up = elapsed >= maxDuration;
-              const experiment_done = time_up && completed_conditions >= 2;  //acabar experimento cuando termine 6 sesiones minimo y máximo 20 minutos de tiempo en el experimento.
+              const experiment_done = time_up && completed_conditions >= 5;  //acabar experimento cuando termine 6 sesiones minimo y máximo 20 minutos de tiempo en el experimento.
 
               if (!should_continue && !condition_closed) {
                 completed_conditions++;
@@ -1291,7 +1291,7 @@
 
         const experiment_done =
           elapsed >= maxDuration &&
-          completed_conditions >= 2;
+          completed_conditions >= 5;
 
         if (experiment_done) {
           jsPsych.pauseExperiment();
