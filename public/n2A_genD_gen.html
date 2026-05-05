@@ -534,11 +534,11 @@
 
       // ======= Variables =======
       
-          let fixed_delays = [500, 1515, 2899, 4594,
+      let fixed_delays = [500, 1515, 2899, 4594,
                           6566, 8790, 11249, 13928,
                         16817, 19905, 23184, 26750];
 
-                        let framing = '2';
+      let framing = '2';
       let A_s = 5000//
       let A_l = 20000//
       let stepSize = 1000;
@@ -669,7 +669,7 @@
           </div> 
           `,
           choices: [],
-          trial_duration: 10000,
+          trial_duration: 9000,
           on_load: () => {
             const display_el = jsPsych.getDisplayElement();
             const canvas = display_el.querySelector('#board');
@@ -1237,8 +1237,8 @@
               const should_continue = !(
                 aversive.value ||
                 p_tracker.p_changes >= 3 ||// 3 cambios de preferencia
-                p_tracker.no_change >= 6 ||// 7 trials sin cambio de preferencia
-                response_type.length >= 9  // 10 trials realizados            
+                p_tracker.no_change >= 5 ||// 7 trials sin cambio de preferencia
+                response_type.length >= 8  // 10 trials realizados            
               );
               const elapsed = Date.now() - experimentStartTime;
               const time_up = elapsed >= maxDuration;

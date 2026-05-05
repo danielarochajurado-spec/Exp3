@@ -172,7 +172,7 @@
   <div id="jspsych-target"></div>
   <script type="module">
     
-    let framing = '3';
+    let framing = '2';
 
     // Import the functions you need from the SDKs you need
           import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
@@ -533,12 +533,10 @@
       document.body.appendChild(saveExitBtn);
 
       // ======= Variables =======
-      let fixed_delays = [500, 1515, 2899, 4594,
-                          6566, 8790, 11249, 13928,
-                        16817, 19905, 23184, 26750];
-
       
-      let framing = '3';
+      let fixed_delays = [2899, 4594,
+                          6566];
+      let framing = '2';
       let A_s = 5000//
       let A_l = 20000//
       let stepSize = 1000;
@@ -669,7 +667,7 @@
           </div> 
           `,
           choices: [],
-          trial_duration: 9000,
+          trial_duration: 10000,
           on_load: () => {
             const display_el = jsPsych.getDisplayElement();
             const canvas = display_el.querySelector('#board');
@@ -743,10 +741,8 @@
             }
 
             return [
-
-                `${formatSmartNumber(current_delay_small / 1000)} seg. de espera, pouco tempo de jogo`,           
-                `${formatSmartNumber(delayState.large / 1000)} seg. de espera, muito tempo de jogo`,
-       
+              `Pouca espera e pouco tempo de jogo`,
+              `Espera variável e muito tempo de jogo`,
             ];
           },
           button_html: [
@@ -1066,10 +1062,12 @@
           },
           choices: () => {
 
-            
+            function formatSeconds(ms) {
+              return formatSmartNumber(ms / 1000, 2);
+            }
+
             return [
-           
-                `${formatSmartNumber(delayState.large / 1000)} seg. de espera, muito tempo de jogo`
+              `Espera variável e muito tempo de jogo`
             ];
           },
           button_html: [
@@ -1147,9 +1145,9 @@
             `;
           },
           choices: () => [
-          `${formatSmartNumber(current_delay_small / 1000)} seg. de espera, pouco tempo de jogo`
-
-                 ],
+            `pouca espera e pouco tempo de jogo`,
+              
+          ],
 
           button_html: [
             `<button class="jspsych-btn" style="background-color:#116266; color:white; padding:20px; font-size:18px; border:none; border-radius:12px;">%choice%</button>`
@@ -1185,7 +1183,7 @@
         };
       }
 
-      const maxDuration = 15 * 60 * 1000;//establecida en 30
+      const maxDuration = 5 * 60 * 1000;//establecida en 30
       let completed_conditions = 0;
       // ======= Condiciones de orden y cierre =======
       function buildConditionsLoop() {
@@ -1237,12 +1235,12 @@
               const should_continue = !(
                 aversive.value ||
                 p_tracker.p_changes >= 3 ||// 3 cambios de preferencia
-                p_tracker.no_change >= 5 ||// 7 trials sin cambio de preferencia
-                response_type.length >= 8  // 10 trials realizados            
+                p_tracker.no_change >= 6 ||// 7 trials sin cambio de preferencia
+                response_type.length >= 9  // 10 trials realizados            
               );
               const elapsed = Date.now() - experimentStartTime;
               const time_up = elapsed >= maxDuration;
-              const experiment_done = time_up && completed_conditions >= 5;  //acabar experimento cuando termine 5 sesiones minimo y máximo 15 minutos de tiempo en el experimento.
+              const experiment_done = time_up && completed_conditions >= 3;  //acabar experimento cuando termine 6 sesiones minimo y máximo 20 minutos de tiempo en el experimento.
 
               if (!should_continue && !condition_closed) {
                 completed_conditions++;
@@ -1291,7 +1289,7 @@
 
         const experiment_done =
           elapsed >= maxDuration &&
-          completed_conditions >= 5;
+          completed_conditions >= 3;
 
         if (experiment_done) {
           jsPsych.pauseExperiment();
@@ -1301,7 +1299,7 @@
                          Se quiser, pode aproveitar para descansar. <br>      
                          O jogo continuará após a pausa. <br><br>
                         Experimentador: Presione "Salvar e sair" e depois guarde o excel.    
-                        </div>  
+                        </div> 
                         `;
           setTimeout(() => {
             jsPsych.endExperiment(

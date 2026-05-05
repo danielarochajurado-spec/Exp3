@@ -16,6 +16,7 @@ library(ggeffects)
 library(emmeans)
 
 library(lme4)
+library(lattice)
 
 
 theme_set(theme_classic())
@@ -139,7 +140,7 @@ ip <- rawData %>%
 plotIP <- ggplot(ip, aes(condition, ip, color = framing)) +
   geom_point(alpha = 0.3) +
   geom_line(aes(group = framing, alpha = 0.3))+
-  facet_wrap(~ participant, scales = "free") +
+  facet_wrap(~ participant, scales = "fixed") +
   labs(title = "Indifference Points", color = "Framing")
 
 plotIP
@@ -158,6 +159,49 @@ linearModel <- ip %>%
   ) %>%
   dplyr::select(-model)
 
+#  Ajuste linear mixto
+
+mixedModel <- lmer(
+  ip ~ condition * framing +
+    (1 | participant),
+  data = ip
+)
+
+lmerTest::lmer(
+  ip ~ condition * framing + (1 | participant),
+  data = ip
+)
+
+ip$pred_individual <- predict(mixedModel)
+
+ip$pred_fixed <- predict(
+  mixedModel,
+  re.form = NA
+)
+
+ggplot(ip,
+       aes(condition,
+           pred_individual,
+           group = participant)) +
+  
+  geom_line(alpha = 0.1) +
+  facet_wrap(~framing)+
+  stat_summary(
+    aes(y = pred_fixed),
+    fun = mean,
+    geom = "line",
+    linewidth = 0.5
+  )
+
+library(ggeffects)
+
+pred <- ggpredict(
+  mixedModel,
+  terms = c("condition", "framing")
+)
+
+plot(pred)
+
 ## intercepto ----
 
 plotIntercept <- ggplot(linearModel, aes(framing, intercept)) +
@@ -169,7 +213,7 @@ plotIntercept <- ggplot(linearModel, aes(framing, intercept)) +
 plotIntercept
 
 ggplot(linearModel, aes(x = intercept)) +
-  geom_histogram(fill = "white", color = "black", bins = 5)+
+  geom_histogram(fill = "white", color = "black", bins = 10)+
   facet_wrap(~ framing)+
   labs(title = " Intercept distribution")
 
@@ -266,14 +310,14 @@ ggplot(linearModel, aes(x = slope)) +
                   max(rawDataFree$condition),
                   length.out = 50)
   
-  model <- glmer(choice ~ condition * framing + (1 + condition | participant), 
+  logisitic <- glmer(choice ~ condition * framing + (1 + condition | participant), 
                  family = binomial, data = rawDataFree)
   
-  library(lattice)
-  dotplot(ranef(model, condVar = TRUE))
+ 
+  dotplot(ranef(logisitic, condVar = TRUE))
   
   emm <- emmeans(
-    model,
+    logisitic,
     ~ framing | condition,
     at = list(condition = condition_sequence),
     type = "response"  
@@ -290,6 +334,34 @@ ggplot(linearModel, aes(x = slope)) +
     labs(
       y = "P(elegir large)",
       x = "Condition (centrada)",
-      title = "Curvas predichas del modelo"
+      title = "Curvas predichas del logisitico"
     )
-
+    
+    newdata <- expand.grid(
+      condition = sort(unique(rawDataFree$condition)),
+      framing = unique(rawDataFree$framing)
+    )
+    
+    newdata$pred <- predict(
+      logisitic,
+      newdata = newdata,
+      type = "response",
+      re.form = NA
+    )
+    
+    ggplot() +
+      stat_summary(
+        data = rawDataFree,
+        aes(condition, choice),
+        fun = mean,
+        geom = "point",
+        size = 1
+      ) +
+      geom_line(
+        data = newdata,
+        aes(condition, pred),
+        linewidth = 1,
+        alpha = 0.5
+      ) +
+      facet_wrap(~ framing)+
+      ylim(0,1)

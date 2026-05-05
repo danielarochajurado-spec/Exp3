@@ -668,7 +668,7 @@
           </div> 
           `,
           choices: [],
-          trial_duration: 10000,
+          trial_duration: 9000,
           on_load: () => {
             const display_el = jsPsych.getDisplayElement();
             const canvas = display_el.querySelector('#board');
@@ -1236,8 +1236,8 @@
               const should_continue = !(
                 aversive.value ||
                 p_tracker.p_changes >= 3 ||// 3 cambios de preferencia
-                p_tracker.no_change >= 6 ||// 7 trials sin cambio de preferencia
-                response_type.length >= 9  // 10 trials realizados            
+                p_tracker.no_change >= 5 ||// 7 trials sin cambio de preferencia
+                response_type.length >= 8  // 10 trials realizados            
               );
               const elapsed = Date.now() - experimentStartTime;
               const time_up = elapsed >= maxDuration;
