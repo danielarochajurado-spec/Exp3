@@ -543,16 +543,16 @@
 
             // ======= Variables =======
             const delay_conditions = [
-                { small: 6250, long: 6250 },
-                { small: 3760, long: 8750 },
-                { small: 2500, long: 10000 },
-                { small: 1780, long: 10600 }
+                { small: 5250, long: 5250 },
+                //{ small: 4200, long: 6300 },
+                { small: 3180, long: 7320 },
+                { small: 2100, long: 8400 }
             ];
-            let num_forced_trials = 20;
-            let numFreeTrials = 15;
+            let num_forced_trials =20;
+            let numFreeTrials = 20;
             let trial_number = 0;
             let total_game_score = 0;
-            let gameDuration = 12000;
+            let gameDuration = 9000;
 
             let free_choice_tracker = {
                 choices: []
@@ -719,15 +719,15 @@
                             // opción informada
                             if (Math.random() < 0.2) {
                                 duration = condition.small;
-                                text = `Espere pouco`;
+                                text = `Espere ${condition.small / 1000} segundos`;
                             } else {
                                 duration = condition.long;
-                                text = `Espere muito`;
+                                text = `Espere ${condition.long / 1000} segundos`;
                             }
 
                         } else {
                             // opción no informada
-                            const label = Math.random() < 0.2 ? "Espere" : "Aguarde";
+                            const label = Math.random() < 0.5 ? "Espere" : "Aguarde";
                             duration = Math.random() < 0.5 ? condition.small : condition.long;
                             text = label;
                         }
@@ -735,7 +735,7 @@
                         // guardar info
                         last.delay_duration = duration;
                         last.delay_type = last.choice === '+' ? 'signaled' : 'unsignaled';
-                        last.delay_tet = text;
+                        last.delay_text = text;
 
 
                         return `<div class="center-content">
@@ -845,7 +845,7 @@
                         total_game_score += state.score || 0;
 
                         const row = {
-                            condition: condition.small/condition.long,
+                            condition: condition.long/condition.small,
                             phase: choice_trial.phase ?? "free",
 
                             delay_duration: delay_trial.delay_duration,
@@ -888,7 +888,7 @@
                     type: jsPsychHtmlButtonResponse,
                     stimulus: `<div></div>`,
                     choices: [],
-                    trial_duration: 1000
+                    trial_duration: 600
                 };
             }
 
@@ -912,8 +912,19 @@
                 return free_block;
             }
 
+            function shuffleArray(array) {
+                let arr = [...array];
+
+                for (let i = arr.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [arr[i], arr[j]] = [arr[j], arr[i]];
+                }
+
+                return arr;
+            }
+
             function buildCondition(condition, index) {
-                
+
                 trial_number = 0;
                 let timeline = [];
 
@@ -960,12 +971,25 @@
 
             function buildExperiment() {
                 let timeline = [];
+                let randomized_conditions = delay_conditions.map((cond, i) => ({
+                    ...cond,
+                    original_index: i
+                }));
 
-                delay_conditions.forEach((cond, i) => {
-                    timeline.push(...buildCondition(cond, i));
+                // randomiza
+                randomized_conditions = shuffleArray(randomized_conditions);
+
+                // construye timeline
+                randomized_conditions.forEach((cond, i) => {
+
+                    timeline.push(
+                        ...buildCondition(cond, cond.original_index)
+                    );
+
                 });
 
                 return timeline;
+
             }
 
 
