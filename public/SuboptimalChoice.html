@@ -544,15 +544,15 @@
             // ======= Variables =======
             const delay_conditions = [
                 { small: 5250, long: 5250 },
-                //{ small: 4200, long: 6300 },
+                { small: 4200, long: 6300 },
                 { small: 3180, long: 7320 },
                 { small: 2100, long: 8400 }
             ];
-            let num_forced_trials =20;
-            let numFreeTrials = 20;
+            let num_forced_trials = 16;
+            let numFreeTrials = 16;
             let trial_number = 0;
             let total_game_score = 0;
-            let gameDuration = 9000;
+            let gameDuration = 12000;
 
             let free_choice_tracker = {
                 choices: []
@@ -992,10 +992,20 @@
 
             }
 
+            const final_message = {
+                type: jsPsychHtmlButtonResponse,
+                stimulus: () => {
+                    return `<p>Tarefa concluída! </p><p>Obrigada por participar. Chame á experimentadora.</p>`;
+                },
+                choices: ['Fechar']
+            };
+
+
 
             const main_timeline = [
                 ...buildInitialTrials(),
-                ...buildExperiment()
+                ...buildExperiment(),
+               final_message
             ];
 
             jsPsych.run(main_timeline);
